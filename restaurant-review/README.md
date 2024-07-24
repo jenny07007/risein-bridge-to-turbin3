@@ -34,7 +34,7 @@ Program Id: FbNLi3af47D2mmrsnYrBcZvdqGmh7Y82SougLkqoLUy4
 
 ### Review Frontend
 
-Explore the frontend setup [here](review-frontend/README.md)
+Explore the frontend setup [here](restaurant-review-frontend/README.md)
 
 ### License
 
