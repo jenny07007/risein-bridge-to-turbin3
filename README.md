@@ -28,7 +28,7 @@ Empty the SOL in a wallet (balance - fees).
 
 Transfer tokens using the SPL Token Program.
 
-[Transfer tokens](spl-token-program/spl_transfer.ts)
+[Transfer tokens](H2-spl-token-program/spl_transfer.ts)
 
 ### Restaurant Review App
 
