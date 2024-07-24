@@ -1,4 +1,5 @@
 node_modules
+target
 dev-wallet.json
 
 .DS_Store
