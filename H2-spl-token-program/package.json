@@ -12,9 +12,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@solana/spl-token": "^0.4.8",
-    "@solana/web3.js": "^1.95.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.5.3"
+    "@solana-program/system": "^0.6.2",
+    "@solana-program/token": "^0.4.1",
+    "@solana-program/token-2022": "^0.3.4",
+    "@solana/web3.js": "2.0.0",
+    "@types/node": "22.10.5",
+    "bs58": "^6.0.0",
+    "typescript": "5.7.3"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2"
   }
 }

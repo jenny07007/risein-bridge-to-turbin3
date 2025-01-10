@@ -1,46 +1,77 @@
 import {
-  clusterApiUrl,
-  Connection,
-  LAMPORTS_PER_SOL,
-  PublicKey,
-  Keypair,
-  Transaction,
-  SystemProgram,
-  sendAndConfirmTransaction,
+  address,
+  createKeyPairSignerFromBytes,
+  createSolanaRpc,
+  createSolanaRpcSubscriptions,
+  sendAndConfirmTransactionFactory,
+  createTransactionMessage,
+  pipe,
+  setTransactionMessageFeePayer,
+  setTransactionMessageLifetimeUsingBlockhash,
+  appendTransactionMessageInstruction,
+  signTransactionMessageWithSigners,
+  lamports,
+  getSignatureFromTransaction,
 } from "@solana/web3.js";
+import { getTransferSolInstruction } from "@solana-program/system";
 
 import wallet from "./dev-wallet.json";
-const sender = Keypair.fromSecretKey(new Uint8Array(wallet));
-const recipient = new PublicKey("DsrE3jGUeo58Qx4pppQJ2bdiqAxmdxY9DoEDWxcDS481");
+
+const recipient = address("DsrE3jGUeo58Qx4pppQJ2bdiqAxmdxY9DoEDWxcDS481");
 
 (async () => {
-  try {
-    const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
-    let balance = await connection.getBalance(sender.publicKey);
-    console.log(`Sender Wallet Balance: ${balance / LAMPORTS_PER_SOL} SOL`);
+  const sender = await createKeyPairSignerFromBytes(new Uint8Array(wallet));
 
-    const transaction = SystemProgram.transfer({
-      fromPubkey: sender.publicKey,
-      toPubkey: recipient,
-      lamports: 1 * LAMPORTS_PER_SOL,
+  try {
+    const rpc = createSolanaRpc("http://localhost:8899");
+    const rpcSubscriptions = createSolanaRpcSubscriptions(
+      "ws://localhost:8900",
+    );
+
+    let balance = await rpc.getBalance(sender.address).send();
+    console.log(`Sender Wallet Balance: ${balance.value / BigInt(1e9)} SOL`);
+
+    // get the latest blockhash
+    const { value: latestBlockhash } = await rpc.getLatestBlockhash().send();
+
+    // transaction sender
+    const sendAndConfirmTransaction = sendAndConfirmTransactionFactory({
+      rpc,
+      rpcSubscriptions, // will resolve when the transaction is confirmed
     });
 
-    const tx = new Transaction().add(transaction);
-    tx.feePayer = sender.publicKey;
-    const txSignature = await sendAndConfirmTransaction(
-      connection,
-      tx,
-      [sender],
-      { commitment: "confirmed", skipPreflight: true },
+    // create transfer transaction. transfer sol.
+    const txMsg = pipe(
+      createTransactionMessage({ version: 0 }), // create transaction message
+      (tx) => setTransactionMessageFeePayer(sender.address, tx), // set the fee payer
+      (tx) => setTransactionMessageLifetimeUsingBlockhash(latestBlockhash, tx), // set the lifetime of the transaction using the latest blockhash
+      (tx) =>
+        // append the transfer instruction
+        appendTransactionMessageInstruction(
+          // we are transferring 1 SOL
+          getTransferSolInstruction({
+            amount: lamports(BigInt(1e9)),
+            destination: recipient,
+            source: sender,
+          }),
+          tx,
+        ),
     );
 
-    // const signature = await connection.sendTransaction(transaction, [sender]);
+    // Sign and send transaction
+    const signedTransaction = await signTransactionMessageWithSigners(txMsg);
+    await sendAndConfirmTransaction(signedTransaction, {
+      commitment: "confirmed",
+    });
+
+    const txSignature = getSignatureFromTransaction(signedTransaction);
+
     console.log(
-      `Success! Check out your TX here: https://explorer.solana.com/tx/${txSignature}?cluster=devnet`,
+      `Success! Check out your TX here: https://explorer.solana.com/tx/${txSignature}?cluster=custom&customUrl=127.0.0.1:8899`,
     );
 
-    balance = await connection.getBalance(sender.publicKey);
-    console.log(`Sender Wallet Balance: ${balance / LAMPORTS_PER_SOL} SOL`);
+    balance = await rpc.getBalance(sender.address).send();
+    console.log(`Sender Wallet Balance: ${balance.value / BigInt(1e9)} SOL`);
   } catch (err) {
     console.error(`Oops, something went wrong: ${err}`);
   }

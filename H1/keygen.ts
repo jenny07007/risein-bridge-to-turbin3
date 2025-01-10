@@ -1,8 +1,12 @@
-import { Keypair } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 
-let keypair = Keypair.generate();
-console.log(
-  `You've generated a new Solana wallet: ${keypair.publicKey.toBase58()}`,
-);
-console.log(`Solana Wallet Secret Key: [${keypair.secretKey}]`);
+(async () => {
+  try {
+    const keypair = await generateKeyPairSigner();
 
+    console.log(`You've generated a new Solana wallet: ${keypair.address}`);
+    // console.log(`Solana Wallet Secret Key: [${keypair.secretKey}]`);
+  } catch (err) {
+    console.error(`Oops, something went wrong: ${err}`);
+  }
+})();
